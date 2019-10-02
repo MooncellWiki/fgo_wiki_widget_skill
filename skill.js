@@ -1,0 +1,320 @@
+$().ready(function () {
+    const rawdata = eval($('#smwdata').html());
+    const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
+    let icon = {};
+    for (let i of $('#skillIcon').html().split('\n')) {
+        let [name, path] = i.split(',');
+        icon[name] = path;
+    }
+    const servant = {};
+    for (let i of $('#servantData').html().split('<br/>')) {
+        if (i) {
+            let [id, name, path] = i.split('\t');
+            servant[parseInt(id)] = {"name": name, "path": path}
+        }
+    }
+    const targets = ['自身', '己方单体', '己方全体', '敌方单体', '敌方全体', '除自身以外的己方全体', '其他'];
+
+    let tbody = $('#tbody');
+    let target_dropdown = $('#target-dropdown');
+    let effect_dropdown = $('#effect-dropdown');
+    //let http://fgo.wiki/w/Widget:Skill?f=Im = $('#mode-select');
+    let result_tbody = $('#result-tbody');
+    let skill_popup = $('#skill-popup');
+    let url = $('#skillUrl');
+
+    let effects2targets = {};
+    let targets2effects = {};
+    let effects = new Set();
+    {
+        let wrongFormatSkills = [];
+        let unKnownSkills = [];
+        for (let v of rawdata) {
+            let temp = [];
+            if ((v.length - 6) % 11 !== 0) {
+                wrongFormatSkills.push(v);
+            }
+            if (v[1].indexOf('未知技能') !== -1) {
+                unKnownSkills.push(v);
+            }
+            v[1].replace(';skillData', '').split(';').forEach(function (value) {
+                let [target, effect] = value.split(',');
+                if (!target) {
+                    console.warn('has undefined target');
+                } else if (!effect) {
+                    console.warn('has undefined effect');
+                } else {
+                    (effects2targets[effect] = effects2targets[effect] || new Set()).add(target);
+                    (targets2effects[target] = targets2effects[target] || new Set()).add(effect);
+                    effects.add(effect);
+                    temp.push(value);
+                }
+            });
+            (servant[v[0]].skills = servant[v[0]].skills || []).push({"cate": temp, "data": v});
+        }
+        if (wrongFormatSkills.length !== 0) {
+            $('#mw-content-text > div').prepend(`不标准的技能数据：<table><tbody><tr><th>从者名</th><th>技能名</th></tr>${Array.from(wrongFormatSkills.map(function (v) {
+                return `<tr><td><a href="/w/${servant[parseInt(v[0])].name}">${servant[parseInt(v[0])].name}</a></td><td>${v[3]}</td></tr>`;
+            })).join('')}</tbody></table>`);
+        }
+        if (unKnownSkills.length !== 0) {
+            $('#mw-content-text > div').prepend(`未知技能：<table><tbody><tr><th>从者名</th><th>技能名</th><th>细节</th></tr>${Array.from(wrongFormatSkills.map(function (v) {
+                return `<tr><td><a href="/w/${servant[parseInt(v[0])].name}">${servant[parseInt(v[0])].name}</a></td><td>${v[3]}</td><td><pre>${JSON.stringify(v)}</pre></td></tr>`;
+            })).join('')}</tbody></table>`);
+        }
+        effects = Array.from(effects).sort();
+    }
+
+    function buildEffectDropDown(str, target) {
+        let temp = [];
+        let e = target ? targets2effects[target] : Object.keys(effects2targets);
+        for (let v of e) {
+            if (v.indexOf(str) !== -1) {
+                temp.push(`<div class="effect-dropdown-item">${v}</div>`);
+            }
+        }
+        return temp.join('');
+    }
+
+    function buildTargetDropDown(str, effect) {
+        let t = effect ? effects2targets[effect] : targets;
+        let temp = [];
+        for (let v of t) {
+            if (v.indexOf(str) !== -1) {
+                temp.push(`<div class="target-dropdown-item">${v}</div>`);
+            }
+        }
+        return temp.join('');
+    }
+
+    let current_dropdown_target;
+
+    target_dropdown.on('mousedown', '.target-dropdown-item', function (event) {
+        current_dropdown_target.val($(event.currentTarget).html());
+        filter();
+    });
+    effect_dropdown.on('mousedown', '.effect-dropdown-item', function (event) {
+        current_dropdown_target.val($(event.currentTarget).html());
+        filter();
+    });
+    tbody.on('click', '.remove', function (event) {
+        let t = $(event.currentTarget).parents('tr');
+        let prev = t.prev();
+        if (t.next().length === 0) {
+            prev.find('td:last').html('<button class="add">新增</button>');
+            prev.attr('id', 'last-filter-row');
+        }
+        t.remove();
+        if (tbody.find('tr').length === 2) {
+            $('#last-filter-row').find('.remove').attr("disabled", "disabled");
+        }
+    }).on('click', '.add', function () {
+        let last_filter = $('#last-filter-row');
+        last_filter.find('.add').remove();
+        last_filter.find('.remove').removeAttr("disabled");
+        last_filter.removeAttr("id");
+        tbody.append(`<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" class="target"></td><td><span class="label">作用效果</span><input type="text" class="effect"></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`);
+    }).on('focus', '.target', function (event) {
+        current_dropdown_target = $(event.currentTarget);
+        target_dropdown.html(buildTargetDropDown('', current_dropdown_target.parent().next().find('.effect').val())).show('fast');
+        new Popper(event.currentTarget, target_dropdown, {
+            placement: 'bottom-start'
+        });
+    }).on('input', '.target', function (event) {
+        let t = $(event.currentTarget);
+        let str = t.val();
+        target_dropdown.html(buildTargetDropDown(str, t.parent().next().find('.effect').val()));
+        filter();
+    }).on('blur', '.target', function () {
+        target_dropdown.hide('fast');
+    }).on('focus', '.effect', function (event) {
+        current_dropdown_target = $(event.currentTarget);
+        effect_dropdown.html(buildEffectDropDown('', current_dropdown_target.parent().prev().find('.target').val())).show('fast');
+        new Popper(event.currentTarget, effect_dropdown, {
+            placement: 'bottom-start'
+        });
+    }).on('input', '.effect', function (event) {
+        let t = $(event.currentTarget);
+        let str = t.val();
+        effect_dropdown.html(buildEffectDropDown(str, t.parent().prev().find('.target').val()));
+        filter();
+    }).on('blur', '.effect', function () {
+        effect_dropdown.hide('fast');
+    }).on('change', '.effect,.target', function (event) {
+        console.log(event);
+    });
+
+    result_tbody.on('click mouseover', '.skillIcon', function (event) {
+        let t = $(event.currentTarget).find('img');
+        let [servantId, skillId] = t.data('id').split(',');
+        skill_popup.html(buildSkill(servant[servantId].skills[skillId].data)).show('fast');
+    });
+    /*
+        mode_select.on('change', function () {
+            filter();
+        });
+
+     */
+    {
+        let clipBoard = new ClipboardJS('#skillCopyUrl');
+        clipBoard.on('success', function (e) {
+            alert("链接已复制: " + e.text);
+        });
+        clipBoard.on('error', function (e) {
+            console.error({copyUrlError: e});
+        });
+    }
+    U2F();
+
+    function filter() {
+        let cond = [];
+        //let mode = mode_select.val();
+        for (let e of tbody.find('.filter-row')) {
+            let tar = $(e).find('.target');
+            if (targets.includes(tar.val())) {
+                tar.removeClass('border-red');
+            } else {
+                tar.addClass('border-red');
+                return;
+            }
+            let eff = $(e).find('.effect');
+            if (Object.keys(effects2targets).includes(eff.val())) {
+                eff.removeClass('border-red');
+            } else {
+                eff.addClass('border-red');
+                return;
+            }
+            cond.push(`${tar.val()},${eff.val()}`);
+        }
+        console.log(cond);
+        {
+            let temp = [];
+            //temp.push(mode === 'skill' ? 1 : 0);
+            for (let c of cond) {
+                let [tar, eff] = c.split(',');
+                temp.push(targets.indexOf(tar).toString(2).padStart(3, '0'));
+                temp.push(effects.indexOf(eff).toString(2).padStart(7, '0'));
+            }
+            F2U(temp.join(''));
+        }
+        if (cond.length === 0) {
+            result_tbody.html('');
+            return;
+        }
+        //if (mode === 'skill') {
+        let resultObj = {};
+        for (let s in servant) {
+            for (let d in servant[s].skills) {
+                let flag = true;
+                for (let c of cond) {
+                    if (!servant[s].skills[d]['cate'].includes(c)) {
+                        flag = false;
+                        break;
+                    }
+                }
+                if (flag) {
+                    (resultObj[s] = resultObj[s] || new Set()).add(d);
+                }
+            }
+        }
+        console.log(resultObj);
+        let temp = `<tr><th>No.</th><th>头像</th><th>姓名</th><th>技能</th></tr>`;
+        for (let i in resultObj) {
+            temp += `<tr><td>${i}</td><td><a href="/w/${servant[i]['name']}"><img class="svt-icon" alt="${servant[i]['name']}" src="${servant[i]['path']}"></a></td><td><a href="/w/${servant[i]['name']}">${servant[i].name}</a></td><td>${Array.from(resultObj[i]).map(function (c) {
+                return `<div class="skillIcon"><div>${servant[i].skills[c]['data'][3]}</div><img alt="${servant[i].skills[c]['data'][2]}" data-id="${i},${c}" src="${icon[servant[i].skills[c]['data'][2]]}"></div>`
+            }).join('')}</td></tr>`
+        }
+        result_tbody.html(temp);
+        /*} else {
+            let resultArr = [];
+            for (let s in servant) {
+                let cateArr = [];
+                servant[s].skills.forEach(function (value) {
+                    cateArr = cateArr.concat(value.cate);
+                });
+                cateArr = Array.from(new Set(cateArr));
+                let flag = true;
+                for (let c of cond) {
+                    if (!cateArr.includes(c)) {
+                        flag = false;
+                        break;
+                    }
+                }
+                if (flag) {
+                    resultArr.push(s);
+                }
+            }
+            console.log(resultArr);
+            let temp = `<tr><th>No.</th><th>头像</th><th>姓名</th><th>技能</th></tr>`;
+            for (let i of resultArr) {
+                temp += `<tr><td>${i}</td><td><a href="/w/${servant[i]['name']}"><img alt="${servant[i]['name']}" src="${servant[i]['path']}"></a></td><td><a href="/w/${servant[i]['name']}">${servant[i].name}</a></td><td>${Array.from(servant[i].skills).map(function (value, index) {
+                    return `<div class="skillIcon"><div>${value.data[3]}</div><img alt="${value.data[2]}" data-id="${i},${index}" src="${icon[value.data[2]]}"></div>`
+                }).join('')}</td></tr>`
+            }
+            result_tbody.html(temp);
+        }
+
+         */
+    }
+
+    function buildSkill(arr) {
+        function build(arr) {
+            let temp = [];
+            let i = 6;
+            while (i < arr.length) {
+                if ((i - 6) % 11 === 0) {
+                    temp.push(`<tr><th colspan="10">${arr[i].replace(/<span class="tl-splink">(.*?)<\/span>/g, '$1').replace(/\[\[(.*?)\|(〔.*?〕)]]\[\[分类:对〔.*?〕具有特殊效果]]/g, `<span class="tl-splink"><a href="/w/$1" title="$1">$2</a></span>`)}</th></tr><tr>`);
+                    ++i;
+                } else {
+                    let tempArr = arr.slice(i, i + 10);
+                    i += 10;
+                    if (tempArr[1] === '') {
+                        temp.push(`<td colspan="10">${tempArr[0]}</td>`);
+                    } else {
+                        tempArr.forEach(function (val) {
+                            temp.push(`<td style="width:75px">${val}</td>`);
+                        });
+                    }
+                    temp.push('</tr>');
+                }
+            }
+            temp.push(`</tr>`);
+            return temp.join('');
+        }
+
+        return `<table class="wikitable nomobile logo" style="text-align:center;width:750px"><tbody><tr><th rowspan="2" style="width:75px"><a href="文件:${arr[2]}.png" class="image"><img alt="${arr[2]}" width="60" height="60" data-src="${icon[arr[2]]}" class="lazyload"></a></th><th colspan="6" style="width:450px">${arr[3]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[5]}→<span style="color:red;">${parseInt(arr[5]) - 1}</span>→<span style="color:red;">${parseInt(arr[5]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[4]}</td></tr>${build(arr)}</tbody></table>`;
+    }
+
+    function F2U(str) {
+        str = str.padEnd(Math.ceil(str.length / 6) * 6, '0');
+        let arr = [];
+        for (let i = 0; i < str.length; i = i + 6) {
+            arr.push(_keyStr[parseInt(str.slice(i, i + 6), 2)]);
+        }
+        let b64 = arr.join('');
+        url.attr('value', `http://fgo.wiki/w/Widget:Skill?f=${b64}`);
+    }
+
+    function U2F() {
+        let u = window.location.search.slice(3);
+        if (!u) {
+            return;
+        }
+        let binArr = [];
+        for (let i = 0; i < u.length; i++) {
+            binArr = binArr.concat(_keyStr.indexOf(u[i]).toString(2).padStart(6, '0').split(''));
+        }
+        //mode_select.val(binArr[0] === '1' ? 'skill' : 'servant');
+        //binArr.splice(0, 1);
+        let temp = "";
+        while (binArr.length >= 10) {
+            let tar = binArr.splice(0, 3);
+            let eff = binArr.splice(0, 7);
+            tar = targets[parseInt(tar.join(''), 2)];
+            eff = effects[parseInt(eff.join(''), 2)];
+            temp += `<tr class="filter-row"><td><input class="cb" type="checkbox"></td><td><input type="text" class="target" value="${tar}"></td><td><input type="text" class="effect" value="${eff}"></td></tr>`;
+        }
+        tbody.append(temp);
+        filter();
+    }
+});
