@@ -27,7 +27,10 @@ $().ready(function () {
     let skill_popper;
     let url = $('#skillUrl');
     let count = $('#count');
-
+    let isMobile=!!mw.config.get('wgMFMode');
+    if(isMobile){
+        $('.target,.effect').attr('readonly','');
+    }
     let effects2targets = {};
     let targets2effects = {};
     let effects = new Set();
@@ -69,7 +72,6 @@ $().ready(function () {
         }
         effects = Array.from(effects).sort();
     }
-
     function buildEffectDropDown(str, target) {
         let temp = [];
         let e = target ? targets2effects[target] : Object.keys(effects2targets);
@@ -119,7 +121,7 @@ $().ready(function () {
         last_filter.find('.add').remove();
         last_filter.find('.remove').removeAttr("disabled");
         last_filter.removeAttr("id");
-        tbody.append(`<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" class="target"></td><td><span class="label">作用效果</span><input type="text" class="effect"></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`);
+        tbody.append(`<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" class="target" ${(isMobile?'readonly':'')}></td><td><span class="label">作用效果</span><input type="text" class="effect" ${(isMobile?'readonly':'')}></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`);
     }).on('focus', '.target', function (event) {
         current_dropdown_target = $(event.currentTarget);
         target_dropdown.html(buildTargetDropDown('', current_dropdown_target.parent().next().find('.effect').val())).show('fast');
@@ -291,7 +293,7 @@ $().ready(function () {
             arr.push(_keyStr[parseInt(str.slice(i, i + 6), 2)]);
         }
         let b64 = arr.join('');
-        url.attr('value', `http://fgo.wiki/w/Widget:Skill?f=${b64}`);
+        url.attr('value', `http://fgo.wiki/w/SvtSkill?f=${b64}`);
     }
 
     function U2F() {
@@ -310,9 +312,9 @@ $().ready(function () {
             tar = targets[parseInt(tar.join(''), 2)];
             eff = effects[parseInt(eff.join(''), 2)];
             if (binArr.length >= 10) {
-                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target"></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect"></td><td><button class="remove">删除</button></td><td></td></tr>`;
+                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target" ${(isMobile?'readonly':'')}></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect" ${(isMobile?'readonly':'')}></td><td><button class="remove">删除</button></td><td></td></tr>`;
             } else {
-                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target"></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect"></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`;
+                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target" ${(isMobile?'readonly':'')}></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect" ${(isMobile?'readonly':'')}></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`;
             }
         }
         tbody.find('.filter-row').remove();
