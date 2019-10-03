@@ -1,3 +1,5 @@
+import Popper from "popper.js";
+import $ from "jquery";
 $().ready(function () {
     const rawdata = eval($('#smwdata').html());
     const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
@@ -17,11 +19,14 @@ $().ready(function () {
 
     let tbody = $('#tbody');
     let target_dropdown = $('#target-dropdown');
+    let target_popper;
     let effect_dropdown = $('#effect-dropdown');
-    //let http://fgo.wiki/w/Widget:Skill?f=Im = $('#mode-select');
+    let effect_popper;
     let result_tbody = $('#result-tbody');
     let skill_popup = $('#skill-popup');
+    let skill_popper;
     let url = $('#skillUrl');
+    let count = $('#count');
 
     let effects2targets = {};
     let targets2effects = {};
@@ -108,6 +113,7 @@ $().ready(function () {
         if (tbody.find('tr').length === 2) {
             $('#last-filter-row').find('.remove').attr("disabled", "disabled");
         }
+        filter();
     }).on('click', '.add', function () {
         let last_filter = $('#last-filter-row');
         last_filter.find('.add').remove();
@@ -117,7 +123,7 @@ $().ready(function () {
     }).on('focus', '.target', function (event) {
         current_dropdown_target = $(event.currentTarget);
         target_dropdown.html(buildTargetDropDown('', current_dropdown_target.parent().next().find('.effect').val())).show('fast');
-        new Popper(event.currentTarget, target_dropdown, {
+        target_popper = new Popper(event.currentTarget, target_dropdown, {
             placement: 'bottom-start'
         });
     }).on('input', '.target', function (event) {
@@ -126,11 +132,13 @@ $().ready(function () {
         target_dropdown.html(buildTargetDropDown(str, t.parent().next().find('.effect').val()));
         filter();
     }).on('blur', '.target', function () {
-        target_dropdown.hide('fast');
+        target_dropdown.hide('fast', function () {
+            target_popper.destroy();
+        });
     }).on('focus', '.effect', function (event) {
         current_dropdown_target = $(event.currentTarget);
         effect_dropdown.html(buildEffectDropDown('', current_dropdown_target.parent().prev().find('.target').val())).show('fast');
-        new Popper(event.currentTarget, effect_dropdown, {
+        effect_popper = new Popper(event.currentTarget, effect_dropdown, {
             placement: 'bottom-start'
         });
     }).on('input', '.effect', function (event) {
@@ -139,22 +147,41 @@ $().ready(function () {
         effect_dropdown.html(buildEffectDropDown(str, t.parent().prev().find('.target').val()));
         filter();
     }).on('blur', '.effect', function () {
-        effect_dropdown.hide('fast');
-    }).on('change', '.effect,.target', function (event) {
-        console.log(event);
-    });
-
-    result_tbody.on('click mouseover', '.skillIcon', function (event) {
-        let t = $(event.currentTarget).find('img');
-        let [servantId, skillId] = t.data('id').split(',');
-        skill_popup.html(buildSkill(servant[servantId].skills[skillId].data)).show('fast');
-    });
-    /*
-        mode_select.on('change', function () {
-            filter();
+        effect_dropdown.hide('fast', function () {
+            effect_popper.destroy();
         });
+    });
 
-     */
+    result_tbody.on('click', '.skillIcon', function (event) {
+        let t = $(event.currentTarget);
+        if (skill_popper && skill_popper.reference && t.is($(skill_popper.reference))) {
+            return;
+        }
+        skill_popup.css('display', 'none');
+        let [servantId, skillId] = t.data('id').split(',');
+        skill_popup.html(buildSkill(servant[servantId].skills[skillId].data)).css('display', 'block');
+        skill_popper = new Popper(event.currentTarget, skill_popup, {
+            placement: 'right-start',
+        });
+    });
+    document.addEventListener('click', function (event) {
+        if (!event.target instanceof Element) {
+            skill_popup.css('display', 'none');
+            if (skill_popper) {
+                skill_popper.destroy();
+                skill_popper = undefined;
+            }
+            return;
+        }
+        let t = $(event.target);
+        if (t.parents('#skill-popup').length !== 1 && !t.hasClass('skillIcon')) {
+            skill_popup.css('display', 'none');
+            if (skill_popper) {
+                skill_popper.destroy();
+                skill_popper = undefined;
+            }
+        }
+    }, true);
     {
         let clipBoard = new ClipboardJS('#skillCopyUrl');
         clipBoard.on('success', function (e) {
@@ -168,7 +195,6 @@ $().ready(function () {
 
     function filter() {
         let cond = [];
-        //let mode = mode_select.val();
         for (let e of tbody.find('.filter-row')) {
             let tar = $(e).find('.target');
             if (targets.includes(tar.val())) {
@@ -189,7 +215,6 @@ $().ready(function () {
         console.log(cond);
         {
             let temp = [];
-            //temp.push(mode === 'skill' ? 1 : 0);
             for (let c of cond) {
                 let [tar, eff] = c.split(',');
                 temp.push(targets.indexOf(tar).toString(2).padStart(3, '0'));
@@ -201,7 +226,6 @@ $().ready(function () {
             result_tbody.html('');
             return;
         }
-        //if (mode === 'skill') {
         let resultObj = {};
         for (let s in servant) {
             for (let d in servant[s].skills) {
@@ -218,43 +242,18 @@ $().ready(function () {
             }
         }
         console.log(resultObj);
-        let temp = `<tr><th>No.</th><th>头像</th><th>姓名</th><th>技能</th></tr>`;
+        let svt = 0;
+        let skill = 0;
+        let temp = `<tr><th style="width: 40px">No.</th><th style="width: 100px;">头像</th><th style="width: 230px">姓名</th><th style="width: 100px">技能图标</th><th style="width: 230px">技能名称</th></tr>`;
         for (let i in resultObj) {
-            temp += `<tr><td>${i}</td><td><a href="/w/${servant[i]['name']}"><img class="svt-icon" alt="${servant[i]['name']}" src="${servant[i]['path']}"></a></td><td><a href="/w/${servant[i]['name']}">${servant[i].name}</a></td><td>${Array.from(resultObj[i]).map(function (c) {
-                return `<div class="skillIcon"><div>${servant[i].skills[c]['data'][3]}</div><img alt="${servant[i].skills[c]['data'][2]}" data-id="${i},${c}" src="${icon[servant[i].skills[c]['data'][2]]}"></div>`
-            }).join('')}</td></tr>`
+            ++svt;
+            for (let j of resultObj[parseInt(i)]) {
+                ++skill;
+                temp += `<tr><td>${i}</td><td><a href="/w/${servant[i]['name']}"><img class="svt-icon" alt="${servant[i]['name']}" src="${servant[i]['path']}"></a></td><td><a href="/w/${servant[i]['name']}">${servant[i].name}</a></td><td><img class="skillIcon" alt="${servant[i].skills[j]['data'][2]}" data-id="${i},${j}" src="${icon[servant[i].skills[j]['data'][2]]}"></td><td><span>${servant[i].skills[j]['data'][3]}</span></td>`
+            }
         }
+        count.html(`共${svt}个从者,${skill}个技能`);
         result_tbody.html(temp);
-        /*} else {
-            let resultArr = [];
-            for (let s in servant) {
-                let cateArr = [];
-                servant[s].skills.forEach(function (value) {
-                    cateArr = cateArr.concat(value.cate);
-                });
-                cateArr = Array.from(new Set(cateArr));
-                let flag = true;
-                for (let c of cond) {
-                    if (!cateArr.includes(c)) {
-                        flag = false;
-                        break;
-                    }
-                }
-                if (flag) {
-                    resultArr.push(s);
-                }
-            }
-            console.log(resultArr);
-            let temp = `<tr><th>No.</th><th>头像</th><th>姓名</th><th>技能</th></tr>`;
-            for (let i of resultArr) {
-                temp += `<tr><td>${i}</td><td><a href="/w/${servant[i]['name']}"><img alt="${servant[i]['name']}" src="${servant[i]['path']}"></a></td><td><a href="/w/${servant[i]['name']}">${servant[i].name}</a></td><td>${Array.from(servant[i].skills).map(function (value, index) {
-                    return `<div class="skillIcon"><div>${value.data[3]}</div><img alt="${value.data[2]}" data-id="${i},${index}" src="${icon[value.data[2]]}"></div>`
-                }).join('')}</td></tr>`
-            }
-            result_tbody.html(temp);
-        }
-
-         */
     }
 
     function buildSkill(arr) {
@@ -262,6 +261,7 @@ $().ready(function () {
             let temp = [];
             let i = 6;
             while (i < arr.length) {
+                arr[i] = arr[i].replace(/'"`UNIQ--ref-.*?-QINU`"'/, '');
                 if ((i - 6) % 11 === 0) {
                     temp.push(`<tr><th colspan="10">${arr[i].replace(/<span class="tl-splink">(.*?)<\/span>/g, '$1').replace(/\[\[(.*?)\|(〔.*?〕)]]\[\[分类:对〔.*?〕具有特殊效果]]/g, `<span class="tl-splink"><a href="/w/$1" title="$1">$2</a></span>`)}</th></tr><tr>`);
                     ++i;
@@ -281,8 +281,7 @@ $().ready(function () {
             temp.push(`</tr>`);
             return temp.join('');
         }
-
-        return `<table class="wikitable nomobile logo" style="text-align:center;width:750px"><tbody><tr><th rowspan="2" style="width:75px"><a href="文件:${arr[2]}.png" class="image"><img alt="${arr[2]}" width="60" height="60" data-src="${icon[arr[2]]}" class="lazyload"></a></th><th colspan="6" style="width:450px">${arr[3]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[5]}→<span style="color:red;">${parseInt(arr[5]) - 1}</span>→<span style="color:red;">${parseInt(arr[5]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[4]}</td></tr>${build(arr)}</tbody></table>`;
+        return `<table class="wikitable logo" style="text-align:center;width:750px;margin: 0"><tbody><tr><th rowspan="2" style="width:75px"><a href="文件:${arr[2]}.png" class="image"><img alt="${arr[2]}" width="60" height="60" src="${icon[arr[2]]}"></a></th><th colspan="6" style="width:450px">${arr[3]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[5]}→<span style="color:red;">${parseInt(arr[5]) - 1}</span>→<span style="color:red;">${parseInt(arr[5]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[4]}</td></tr>${build(arr)}</tbody></table>`;
     }
 
     function F2U(str) {
@@ -296,7 +295,7 @@ $().ready(function () {
     }
 
     function U2F() {
-        let u = window.location.search.slice(3);
+        let u = new URLSearchParams(window.location.search).get('f');
         if (!u) {
             return;
         }
@@ -304,17 +303,23 @@ $().ready(function () {
         for (let i = 0; i < u.length; i++) {
             binArr = binArr.concat(_keyStr.indexOf(u[i]).toString(2).padStart(6, '0').split(''));
         }
-        //mode_select.val(binArr[0] === '1' ? 'skill' : 'servant');
-        //binArr.splice(0, 1);
         let temp = "";
         while (binArr.length >= 10) {
             let tar = binArr.splice(0, 3);
             let eff = binArr.splice(0, 7);
             tar = targets[parseInt(tar.join(''), 2)];
             eff = effects[parseInt(eff.join(''), 2)];
-            temp += `<tr class="filter-row"><td><input class="cb" type="checkbox"></td><td><input type="text" class="target" value="${tar}"></td><td><input type="text" class="effect" value="${eff}"></td></tr>`;
+            if (binArr.length >= 10) {
+                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target"></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect"></td><td><button class="remove">删除</button></td><td></td></tr>`;
+            } else {
+                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target"></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect"></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`;
+            }
         }
+        tbody.find('.filter-row').remove();
         tbody.append(temp);
+        if (tbody.find('tr').length === 2) {
+            $('#last-filter-row').find('.remove').attr("disabled", "disabled");
+        }
         filter();
     }
 });
