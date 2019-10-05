@@ -24,6 +24,13 @@ function buildCss(){
 }
 function buildHtml(){
     return gulp.src('skill.html')
+        .pipe(through2.obj(function(file, _, cb) {
+            if (file.isBuffer()) {
+                //console.log(file.contents);
+                file.contents =Buffer.from(file.contents.toString().match(/<body>([\s\S]*)<\/body>/)[1]);
+            }
+            cb(null, file);
+        }))
         .pipe(htmlmin({ collapseWhitespace: true }))
         .pipe(gulp.dest("dest"));
 }
