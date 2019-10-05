@@ -2,7 +2,8 @@ const gulp = require('gulp');
 const babel = require('gulp-babel');
 const cleanCSS = require('gulp-clean-css');
 const through2 = require('through2');
-function buildjs(){
+const htmlmin = require('gulp-htmlmin');
+function buildJavaScript(){
     return gulp.src('skill.js')
         .pipe(through2.obj(function(file, _, cb) {
             if (file.isBuffer()) {
@@ -16,9 +17,14 @@ function buildjs(){
         }))
         .pipe(gulp.dest("dest"));
 }
-function buildcss(){
+function buildCss(){
     return gulp.src('skill.css')
         .pipe(cleanCSS())
         .pipe(gulp.dest("dest"));
 }
-exports.default = gulp.parallel(buildjs, buildcss);
+function buildHtml(){
+    return gulp.src('skill.html')
+        .pipe(htmlmin({ collapseWhitespace: true }))
+        .pipe(gulp.dest("dest"));
+}
+exports.default = gulp.parallel(buildJavaScript, buildCss,buildHtml);

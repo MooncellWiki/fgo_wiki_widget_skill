@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script src="https://s2.pstatp.com/cdn/expire-1-M/jquery/3.2.1/jquery.min.js" type="application/javascript"></script>
+    <script src="https://s0.pstatp.com/cdn/expire-1-y/clipboard.js/2.0.0/clipboard.min.js"
+            type="application/javascript"></script>
+    <script src="https://s3.pstatp.com/cdn/expire-1-M/popper.js/1.15.0/umd/popper.min.js"
+            type="application/javascript"></script>
 </head>
 <body>
 <script type="csv" id="skillIcon"><!--{$skillIcon}--></script>
 <script type="csv" id="servantData"><!--{$servantData|regex_replace:"/\[\[SMW::[a-z]+\]\]/":""}--></script>
 <script type="json" id="smwdata">[<!--{$data}-->]</script>
-<script src="https://s2.pstatp.com/cdn/expire-1-M/jquery/3.2.1/jquery.min.js" type="application/javascript"></script>
-<script src="https://s0.pstatp.com/cdn/expire-1-y/clipboard.js/2.0.0/clipboard.min.js"
-        type="application/javascript"></script>
-<script src="https://s3.pstatp.com/cdn/expire-1-M/popper.js/1.15.0/umd/popper.min.js"
-        type="application/javascript"></script>
 <script src="./skill.js"></script>
 <link href="skill.css" type="text/css" rel="stylesheet" />
 <div class="sw" style="width:700px;">

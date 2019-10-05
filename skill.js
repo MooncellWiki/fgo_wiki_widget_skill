@@ -283,7 +283,7 @@ $().ready(function () {
             temp.push(`</tr>`);
             return temp.join('');
         }
-        return `<table class="wikitable logo" style="text-align:center;width:750px;margin: 0"><tbody><tr><th rowspan="2" style="width:75px"><a href="文件:${arr[2]}.png" class="image"><img alt="${arr[2]}" width="60" height="60" src="${icon[arr[2]]}"></a></th><th colspan="6" style="width:450px">${arr[3]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[5]}→<span style="color:red;">${parseInt(arr[5]) - 1}</span>→<span style="color:red;">${parseInt(arr[5]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[4]}</td></tr>${build(arr)}</tbody></table>`;
+        return `<table class="wikitable logo" style="text-align:center;width:750px;margin: 0"><tbody><tr><th rowspan="2" style="width:75px"><a href="/w/文件:${arr[2]}.png" class="image"><img alt="${arr[2]}" width="60" height="60" src="${icon[arr[2]]}"></a></th><th colspan="6" style="width:450px">${arr[3]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[5]}→<span style="color:red;">${parseInt(arr[5]) - 1}</span>→<span style="color:red;">${parseInt(arr[5]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[4]}</td></tr>${build(arr)}</tbody></table>`;
     }
 
     function F2U(str) {
