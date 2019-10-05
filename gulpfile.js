@@ -3,12 +3,12 @@ const babel = require('gulp-babel');
 const cleanCSS = require('gulp-clean-css');
 const through2 = require('through2');
 const htmlmin = require('gulp-htmlmin');
-function buildJavaScript(){
+
+function buildJavaScript() {
     return gulp.src('skill.js')
-        .pipe(through2.obj(function(file, _, cb) {
+        .pipe(through2.obj(function (file, _, cb) {
             if (file.isBuffer()) {
-                //console.log(file.contents);
-                file.contents =Buffer.from(file.contents.toString().replace(/import .*? from .*?;/g,''));
+                file.contents = Buffer.from(file.contents.toString().replace(/import .*? from .*?;/g, ''));
             }
             cb(null, file);
         }))
@@ -17,21 +17,37 @@ function buildJavaScript(){
         }))
         .pipe(gulp.dest("dest"));
 }
-function buildCss(){
+
+function buildCss() {
     return gulp.src('skill.css')
-        .pipe(cleanCSS())
-        .pipe(gulp.dest("dest"));
-}
-function buildHtml(){
-    return gulp.src('skill.html')
-        .pipe(through2.obj(function(file, _, cb) {
+        .pipe(through2.obj(function (file, _, cb) {
             if (file.isBuffer()) {
-                //console.log(file.contents);
-                file.contents =Buffer.from(file.contents.toString().match(/<body>([\s\S]*)<\/body>/)[1]);
+                let lines = file.contents.toString().split('\n');
+                let temp = '';
+                for (let i = 0; i < lines.length; i++) {
+                    if (!lines[i].startsWith(' ') && !lines[i].startsWith('}') && lines[i].indexOf('{') !== -1 && lines[i].indexOf('.skin-minerva') === -1) {
+                        temp += '.widget ';
+                    }
+                    temp += lines[i] + '\n';
+                }
+                file.contents = Buffer.from(temp);
             }
             cb(null, file);
         }))
-        .pipe(htmlmin({ collapseWhitespace: true }))
+        .pipe(cleanCSS())
         .pipe(gulp.dest("dest"));
 }
-exports.default = gulp.parallel(buildJavaScript, buildCss,buildHtml);
+
+function buildHtml() {
+    return gulp.src('skill.html')
+        .pipe(through2.obj(function (file, _, cb) {
+            if (file.isBuffer()) {
+                file.contents = Buffer.from(file.contents.toString().match(/<body>([\s\S]*)<\/body>/)[1]);
+            }
+            cb(null, file);
+        }))
+        .pipe(htmlmin({collapseWhitespace: true}))
+        .pipe(gulp.dest("dest"));
+}
+
+exports.default = gulp.parallel(buildJavaScript, buildCss, buildHtml);
