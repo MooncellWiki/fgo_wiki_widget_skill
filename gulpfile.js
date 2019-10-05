@@ -5,7 +5,7 @@ const through2 = require('through2');
 const htmlmin = require('gulp-htmlmin');
 
 function buildJavaScript() {
-    return gulp.src('skill.js')
+    return gulp.src('./src/index.js')
         .pipe(through2.obj(function (file, _, cb) {
             if (file.isBuffer()) {
                 file.contents = Buffer.from(file.contents.toString().replace(/import .*? from .*?;/g, ''));
@@ -19,7 +19,7 @@ function buildJavaScript() {
 }
 
 function buildCss() {
-    return gulp.src('skill.css')
+    return gulp.src('./src/index.css')
         .pipe(through2.obj(function (file, _, cb) {
             if (file.isBuffer()) {
                 let lines = file.contents.toString().split('\n');
@@ -39,7 +39,7 @@ function buildCss() {
 }
 
 function buildHtml() {
-    return gulp.src('skill.html')
+    return gulp.src('./src/index.html')
         .pipe(through2.obj(function (file, _, cb) {
             if (file.isBuffer()) {
                 file.contents = Buffer.from(file.contents.toString().match(/<body>([\s\S]*)<\/body>/)[1]);
@@ -50,4 +50,46 @@ function buildHtml() {
         .pipe(gulp.dest("dest"));
 }
 
-exports.default = gulp.parallel(buildJavaScript, buildCss, buildHtml);
+
+function devJavaScript() {
+    return gulp.src('./src/index.js')
+        .pipe(through2.obj(function (file, _, cb) {
+            if (file.isBuffer()) {
+                file.contents = Buffer.from(file.contents.toString().replace(/import .*? from .*?;/g, ''));
+            }
+            cb(null, file);
+        }))
+        .pipe(gulp.dest("dev"));
+}
+
+function devCss() {
+    return gulp.src('./src/index.css')
+        .pipe(through2.obj(function (file, _, cb) {
+            if (file.isBuffer()) {
+                let lines = file.contents.toString().split('\n');
+                let temp = '';
+                for (let i = 0; i < lines.length; i++) {
+                    if (!lines[i].startsWith(' ') && !lines[i].startsWith('}') && lines[i].indexOf('{') !== -1 && lines[i].indexOf('.skin-minerva') === -1) {
+                        temp += '.widget ';
+                    }
+                    temp += lines[i] + '\n';
+                }
+                file.contents = Buffer.from(temp);
+            }
+            cb(null, file);
+        }))
+        .pipe(gulp.dest("dev"));
+}
+
+function devHtml() {
+    return gulp.src('./src/index.html')
+        .pipe(gulp.dest("dev"));
+}
+
+gulp.task('watch', function () {
+    gulp.watch('src/*.js', devJavaScript);
+    gulp.watch('src/*.css', devCss());
+    gulp.watch('src/*.html', devHtml());
+});
+
+exports.build = gulp.parallel(buildJavaScript, buildCss, buildHtml);
