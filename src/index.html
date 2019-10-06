@@ -1,19 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <script src="https://s2.pstatp.com/cdn/expire-1-M/jquery/3.2.1/jquery.min.js" type="application/javascript"></script>
+    <script src="https://s2.pstatp.com/cdn/expire-1-M/jquery/3.2.1/jquery.min.js"
+            type="application/javascript"></script>
     <script src="https://s0.pstatp.com/cdn/expire-1-y/clipboard.js/2.0.0/clipboard.min.js"
             type="application/javascript"></script>
     <script src="https://s3.pstatp.com/cdn/expire-1-M/popper.js/1.15.0/umd/popper.min.js"
             type="application/javascript"></script>
+    <link href="/dependence.css" type="text/css" rel="stylesheet"/>
+    <link href="https://s2.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.css" rel="stylesheet">
+    <link href="https://s3.pstatp.com/cdn/expire-1-M/animate.css/3.7.0/animate.min.css" rel="stylesheet">
+    <script src="index.js"></script>
+    <link href="index.css" type="text/css" rel="stylesheet"/>
 </head>
-<body>
+<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-0 ns-subject skin-vector action-view">
 <script type="csv" id="skillIcon"><!--{$skillIcon}--></script>
 <script type="csv" id="servantData"><!--{$servantData|regex_replace:"/\[\[SMW::[a-z]+\]\]/":""}--></script>
 <script type="json" id="smwdata">[<!--{$data}-->]</script>
-<script src="skill.js"></script>
-<link href="skill.css" type="text/css" rel="stylesheet" />
 <div class="widget" style="width:700px;">
     <div id="filter">
         <table style="min-width: 100%;padding-bottom: 10px;">
@@ -23,7 +27,6 @@
                     筛选
                 </th>
             </tr>
-
             <tr class="filter-row" id="last-filter-row">
                 <td><span class="label">作用对象</span><input type="text" class="target"></td>
                 <td><span class="label">作用效果</span><input type="text" class="effect"></td>
@@ -37,7 +40,8 @@
             </tbody>
         </table>
     </div>
-    <input id="skillUrl" value="https://fgo.wiki/w/SvtSkill" readonly style="width: calc(100% - 137px);margin-right: 12px">
+    <input id="skillUrl" value="https://fgo.wiki/w/SvtSkill" readonly
+           style="width: calc(100% - 137px);margin-right: 12px">
     <button data-clipboard-target="#skillUrl" id="skillCopyUrl">
         点此复制链接
     </button>
@@ -52,6 +56,5 @@
     <div id="effect-dropdown" style="display: none"></div>
     <div id="skill-popup"></div>
 </div>
-
 </body>
 </html>

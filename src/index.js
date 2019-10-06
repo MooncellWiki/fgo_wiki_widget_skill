@@ -1,5 +1,6 @@
 import Popper from "popper.js";
 import $ from "jquery";
+
 $().ready(function () {
     const rawdata = eval($('#smwdata').html());
     const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
@@ -27,10 +28,13 @@ $().ready(function () {
     let skill_popper;
     let url = $('#skillUrl');
     let count = $('#count');
-    let isMobile=!!mw.config.get('wgMFMode');
-    if(isMobile){
-        $('.target,.effect').attr('readonly','');
-    }
+    let isMobile=false;
+    /*
+        isMobile = !!mw.config.get('wgMFMode');
+        if (isMobile) {
+            $('.target,.effect').attr('readonly', '');
+        }
+    */
     let effects2targets = {};
     let targets2effects = {};
     let effects = new Set();
@@ -72,6 +76,7 @@ $().ready(function () {
         }
         effects = Array.from(effects).sort();
     }
+
     function buildEffectDropDown(str, target) {
         let temp = [];
         let e = target ? targets2effects[target] : Object.keys(effects2targets);
@@ -121,7 +126,7 @@ $().ready(function () {
         last_filter.find('.add').remove();
         last_filter.find('.remove').removeAttr("disabled");
         last_filter.removeAttr("id");
-        tbody.append(`<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" class="target" ${(isMobile?'readonly':'')}></td><td><span class="label">作用效果</span><input type="text" class="effect" ${(isMobile?'readonly':'')}></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`);
+        tbody.append(`<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" class="target" ${(isMobile ? 'readonly' : '')}></td><td><span class="label">作用效果</span><input type="text" class="effect" ${(isMobile ? 'readonly' : '')}></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`);
     }).on('focus', '.target', function (event) {
         current_dropdown_target = $(event.currentTarget);
         target_dropdown.html(buildTargetDropDown('', current_dropdown_target.parent().next().find('.effect').val())).show('fast');
@@ -283,6 +288,7 @@ $().ready(function () {
             temp.push(`</tr>`);
             return temp.join('');
         }
+
         return `<table class="wikitable logo" style="text-align:center;width:750px;margin: 0"><tbody><tr><th rowspan="2" style="width:75px"><a href="/w/文件:${arr[2]}.png" class="image"><img alt="${arr[2]}" width="60" height="60" src="${icon[arr[2]]}"></a></th><th colspan="6" style="width:450px">${arr[3]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[5]}→<span style="color:red;">${parseInt(arr[5]) - 1}</span>→<span style="color:red;">${parseInt(arr[5]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[4]}</td></tr>${build(arr)}</tbody></table>`;
     }
 
@@ -312,9 +318,9 @@ $().ready(function () {
             tar = targets[parseInt(tar.join(''), 2)];
             eff = effects[parseInt(eff.join(''), 2)];
             if (binArr.length >= 10) {
-                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target" ${(isMobile?'readonly':'')}></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect" ${(isMobile?'readonly':'')}></td><td><button class="remove">删除</button></td><td></td></tr>`;
+                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target" ${(isMobile ? 'readonly' : '')}></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect" ${(isMobile ? 'readonly' : '')}></td><td><button class="remove">删除</button></td><td></td></tr>`;
             } else {
-                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target" ${(isMobile?'readonly':'')}></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect" ${(isMobile?'readonly':'')}></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`;
+                temp += `<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" value="${tar}" class="target" ${(isMobile ? 'readonly' : '')}></td><td><span class="label">作用效果</span><input type="text" value="${eff}" class="effect" ${(isMobile ? 'readonly' : '')}></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`;
             }
         }
         tbody.find('.filter-row').remove();

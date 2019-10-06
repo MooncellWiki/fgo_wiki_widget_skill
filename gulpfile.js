@@ -3,6 +3,8 @@ const babel = require('gulp-babel');
 const cleanCSS = require('gulp-clean-css');
 const through2 = require('through2');
 const htmlmin = require('gulp-htmlmin');
+const fs = require('fs');
+const connect = require('gulp-connect');
 
 function buildJavaScript() {
     return gulp.src('./src/index.js')
@@ -59,7 +61,8 @@ function devJavaScript() {
             }
             cb(null, file);
         }))
-        .pipe(gulp.dest("dev"));
+        .pipe(gulp.dest("dev"))
+        .pipe(livereload());
 }
 
 function devCss() {
@@ -78,18 +81,40 @@ function devCss() {
             }
             cb(null, file);
         }))
-        .pipe(gulp.dest("dev"));
+        .pipe(gulp.dest("dev"))
+        .pipe(livereload());
 }
 
 function devHtml() {
+    let skillIcon = fs.readFileSync('./src/skillIcon.txt', 'utf-8');
+    let servantData = fs.readFileSync('./src/servantData.txt', 'utf-8');
+    let data = fs.readFileSync('./src/data.txt', 'utf-8');
     return gulp.src('./src/index.html')
-        .pipe(gulp.dest("dev"));
+        .pipe(through2.obj(function (file, _, cb) {
+            if (file.isBuffer()) {
+                file.contents = Buffer.from(file.contents.toString()
+                    .replace('</body>', '</div></div></div>')
+                    .replace(`<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-0 ns-subject skin-vector action-view">`,
+                        `<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-0 ns-subject skin-vector action-view"><div id="content" class="mw-body" role="main"><div id="bodyContent" class="mw-body-content"><div id="mw-content-text" lang="zh-CN" dir="ltr" class="mw-content-ltr"><div class="mw-parser-output">`)
+                    .replace('<!--{$skillIcon}-->', skillIcon)
+                    .replace('<!--{$servantData|regex_replace:"/\\[\\[SMW::[a-z]+\\]\\]/":""}-->', servantData)
+                    .replace('[<!--{$data}-->]', data));
+            }
+            cb(null, file);
+        }))
+        .pipe(gulp.dest("dev"))
+        .pipe(connect.reload());
 }
 
 gulp.task('watch', function () {
+    connect.server({
+        livereload: true,
+        port: 8888
+    });
     gulp.watch('src/*.js', devJavaScript);
-    gulp.watch('src/*.css', devCss());
-    gulp.watch('src/*.html', devHtml());
+    gulp.watch('src/*.css', devCss);
+    gulp.watch('src/*.html', devHtml);
+    gulp.watch('src/*.txt', devHtml);
 });
 
 exports.build = gulp.parallel(buildJavaScript, buildCss, buildHtml);
