@@ -62,7 +62,7 @@ function devJavaScript() {
             cb(null, file);
         }))
         .pipe(gulp.dest("dev"))
-        .pipe(livereload());
+        .pipe(connect.reload());
 }
 
 function devCss() {
@@ -82,7 +82,7 @@ function devCss() {
             cb(null, file);
         }))
         .pipe(gulp.dest("dev"))
-        .pipe(livereload());
+        .pipe(connect.reload());
 }
 
 function devHtml() {
@@ -94,11 +94,12 @@ function devHtml() {
             if (file.isBuffer()) {
                 file.contents = Buffer.from(file.contents.toString()
                     .replace('</body>', '</div></div></div>')
-                    .replace(`<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-0 ns-subject skin-vector action-view">`,
-                        `<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-0 ns-subject skin-vector action-view"><div id="content" class="mw-body" role="main"><div id="bodyContent" class="mw-body-content"><div id="mw-content-text" lang="zh-CN" dir="ltr" class="mw-content-ltr"><div class="mw-parser-output">`)
+                    .replace(`<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt skin-vector action-view">`,
+                        `<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt skin-vector action-view"><div id="content" class="mw-body" role="main"><div id="bodyContent" class="mw-body-content"><div id="mw-content-text" lang="zh-CN" dir="ltr" class="mw-content-ltr"><div class="mw-parser-output">`)
                     .replace('<!--{$skillIcon}-->', skillIcon)
                     .replace('<!--{$servantData|regex_replace:"/\\[\\[SMW::[a-z]+\\]\\]/":""}-->', servantData)
-                    .replace('[<!--{$data}-->]', data));
+                    .replace('[<!--{$data}-->]', data)
+                );
             }
             cb(null, file);
         }))
@@ -111,10 +112,10 @@ gulp.task('watch', function () {
         livereload: true,
         port: 8888
     });
-    gulp.watch('src/*.js', devJavaScript);
-    gulp.watch('src/*.css', devCss);
-    gulp.watch('src/*.html', devHtml);
-    gulp.watch('src/*.txt', devHtml);
+    gulp.watch('src/*.js', {ignoreInitial: false}, devJavaScript);
+    gulp.watch('src/*.css', {ignoreInitial: false}, devCss);
+    gulp.watch('src/*.html', {ignoreInitial: false}, devHtml);
+    gulp.watch('src/*.txt', {ignoreInitial: false}, devHtml);
 });
 
 exports.build = gulp.parallel(buildJavaScript, buildCss, buildHtml);
