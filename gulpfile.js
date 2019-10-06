@@ -44,7 +44,7 @@ function buildHtml() {
     return gulp.src('./src/index.html')
         .pipe(through2.obj(function (file, _, cb) {
             if (file.isBuffer()) {
-                file.contents = Buffer.from(file.contents.toString().match(/<body>([\s\S]*)<\/body>/)[1]);
+                file.contents = Buffer.from(file.contents.toString().match(/<body .*?>([\s\S]*)<\/body>/)[1]);
             }
             cb(null, file);
         }))
