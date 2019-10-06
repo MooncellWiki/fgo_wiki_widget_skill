@@ -16,7 +16,8 @@
     "through2": "^3.0.1"
   },
   "scripts": {
-    "build": "gulp",
-    "start": "http-server"
+    "build": "gulp build",
+    "start": "http-server",
+    "dev": "gulp watch"
   }
 }
