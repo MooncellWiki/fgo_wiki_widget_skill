@@ -3,8 +3,9 @@ import $ from "jquery";
 
 $().ready(function () {
     const rawdata = eval($('#smwdata').html());
+    const rule = JSON.parse($('#rule').html());
     const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
-    let icon = {};
+    const icon = {};
     for (let i of $('#skillIcon').html().split('\n')) {
         let [name, path] = i.split(',');
         icon[name] = path;
@@ -16,7 +17,8 @@ $().ready(function () {
             servant[parseInt(id)] = {"name": name, "path": path}
         }
     }
-    const targets = ['自身', '己方单体', '己方全体', '敌方单体', '敌方全体', '除自身以外的己方全体', '其他'];
+    const targets = rule["check"]["targets"].sort();
+    const effects = rule["check"]["effects"].sort();
 
     let tbody = $('#tbody');
     let target_dropdown = $('#target-dropdown');
@@ -28,41 +30,116 @@ $().ready(function () {
     let skill_popper;
     let url = $('#skillUrl');
     let count = $('#count');
-    let isMobile=false;
-    /*
-        isMobile = !!mw.config.get('wgMFMode');
-        if (isMobile) {
-            $('.target,.effect').attr('readonly', '');
-        }
-    */
+    let isMobile = !!mw.config.get('wgMFMode');
+    if (isMobile) {
+        $('.target,.effect').attr('readonly', '');
+    }
     let effects2targets = {};
     let targets2effects = {};
-    let effects = new Set();
+
     {
         let wrongFormatSkills = [];
         let unKnownSkills = [];
+
+        function parse(arr) {
+            let et = [];
+            let sid = parseInt(arr[0]);
+            let tar;
+            for (let i = 5; i < arr.length; i = i + 11) {
+                let sr = checkSpecialRule(arr[i], sid);
+                if (sr) {
+                    et = et.concat(sr.et);
+                    if (sr.saveTarget) {
+                        tar = sr.saveTarget;
+                    }
+                } else {
+                    let t = getTar(arr[i]);
+                    if (t) {
+                        tar = t;
+                    }
+                    let eff = getEff(arr[i]);
+                    if (eff === "未知技能") {
+                        unKnownSkills.push(arr);
+                    }
+                    if (!tar) {
+                        console.error(`TARGET NOT FOUND:${JSON.stringify(arr)}`);
+                        unKnownSkills.push(arr);
+                    }
+                    et.push({"e": eff, "t": tar});
+                }
+            }
+            let t = new Set();
+            let result = [];
+            for (let i of et) {
+                if (!rule["check"]["effects"].includes(i.e)) {
+                    console.error(`WRONG EFFECT:${JSON.stringify(arr)}\n${JSON.stringify(i)}`)
+                }
+                if (!rule["check"]["targets"].includes(i.t)) {
+                    console.error(`WRONG TARGET:${JSON.stringify(arr)}\n${JSON.stringify(i)}`);
+                }
+                if (!t.has(JSON.stringify(i))) {
+                    t.add(JSON.stringify(i));
+                    result.push(i)
+                } else {
+                    console.info(`DUPLICATE:${JSON.stringify(arr)}\n${JSON.stringify(et)}\n${JSON.stringify(i)}`)
+                }
+                (effects2targets[i.e] = effects2targets[i.e] || new Set()).add(i.t);
+                (targets2effects[i.t] = targets2effects[i.t] || new Set()).add(i.e);
+            }
+            return result;
+        }
+
+        function checkSpecialRule(des, sid) {
+            for (let s of rule["special"]) {
+                for (let r of s["des"]) {
+                    let pattern = new RegExp(r);
+                    if (des.match(pattern)) {
+                        if (s["svtId"] && s["svtId"].length > 0) {
+                            if (s["svtId"].includes(sid)) {
+                                return {"et": s.et, "saveTarget": s.saveTarget}
+                            }
+                        } else {
+                            return {"et": s.et, "saveTarget": s.saveTarget}
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function getTar(des) {
+            for (let o of rule["target"]) {
+                let key = Object.keys(o)[0];
+                for (let r of o[key]) {
+                    let pattern = new RegExp(r);
+                    if (des.match(pattern)) {
+                        return key;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function getEff(des) {
+            for (let o of rule["normal"]) {
+                let key = Object.keys(o)[0];
+                for (let r of o[key]) {
+                    let pattern = new RegExp(r);
+                    if (des.match(pattern)) {
+                        return key;
+                    }
+                }
+            }
+            console.error(`EFFECT NOT FOUND:${des}`);
+            return "未知技能";
+        }
+
         for (let v of rawdata) {
-            let temp = [];
-            if ((v.length - 6) % 11 !== 0) {
+            if ((v.length - 5) % 11 !== 0) {
                 wrongFormatSkills.push(v);
             }
-            if (v[1].indexOf('未知技能') !== -1) {
-                unKnownSkills.push(v);
-            }
-            v[1].replace(';skillData', '').split(';').forEach(function (value) {
-                let [target, effect] = value.split(',');
-                if (!target) {
-                    console.warn('has undefined target');
-                } else if (!effect) {
-                    console.warn('has undefined effect');
-                } else {
-                    (effects2targets[effect] = effects2targets[effect] || new Set()).add(target);
-                    (targets2effects[target] = targets2effects[target] || new Set()).add(effect);
-                    effects.add(effect);
-                    temp.push(value);
-                }
-            });
-            (servant[v[0]].skills = servant[v[0]].skills || []).push({"cate": temp, "data": v});
+            let et = parse(v);
+            (servant[v[0]].skills = servant[v[0]].skills || []).push({"cate": et, "data": v});
         }
         if (wrongFormatSkills.length !== 0) {
             $('#mw-content-text > div').prepend(`不标准的技能数据：<table><tbody><tr><th>从者名</th><th>技能名</th></tr>${Array.from(wrongFormatSkills.map(function (v) {
@@ -70,11 +147,10 @@ $().ready(function () {
             })).join('')}</tbody></table>`);
         }
         if (unKnownSkills.length !== 0) {
-            $('#mw-content-text > div').prepend(`未知技能：<table><tbody><tr><th>从者名</th><th>技能名</th><th>细节</th></tr>${Array.from(wrongFormatSkills.map(function (v) {
+            $('#mw-content-text > div').prepend(`未知技能/目标：<table><tbody><tr><th>从者名</th><th>技能名</th><th>细节</th></tr>${Array.from(unKnownSkills.map(function (v) {
                 return `<tr><td><a href="/w/${servant[parseInt(v[0])].name}">${servant[parseInt(v[0])].name}</a></td><td>${v[3]}</td><td><pre>${JSON.stringify(v)}</pre></td></tr>`;
             })).join('')}</tbody></table>`);
         }
-        effects = Array.from(effects).sort();
     }
 
     function buildEffectDropDown(str, target) {
@@ -200,6 +276,15 @@ $().ready(function () {
     }
     U2F();
 
+    function myIncludes(s, d, c) {
+        for (let et of servant[s].skills[d]['cate']) {
+            if (et.e === c[1] && et.t === c[0]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function filter() {
         let cond = [];
         for (let e of tbody.find('.filter-row')) {
@@ -217,15 +302,14 @@ $().ready(function () {
                 eff.addClass('border-red');
                 return;
             }
-            cond.push(`${tar.val()},${eff.val()}`);
+            cond.push([tar.val(), eff.val()]);
         }
         console.log(cond);
         {
             let temp = [];
             for (let c of cond) {
-                let [tar, eff] = c.split(',');
-                temp.push(targets.indexOf(tar).toString(2).padStart(3, '0'));
-                temp.push(effects.indexOf(eff).toString(2).padStart(7, '0'));
+                temp.push(targets.indexOf(c[0]).toString(2).padStart(3, '0'));
+                temp.push(effects.indexOf(c[1]).toString(2).padStart(7, '0'));
             }
             F2U(temp.join(''));
         }
@@ -238,7 +322,7 @@ $().ready(function () {
             for (let d in servant[s].skills) {
                 let flag = true;
                 for (let c of cond) {
-                    if (!servant[s].skills[d]['cate'].includes(c)) {
+                    if (!myIncludes(s, d, c)) {
                         flag = false;
                         break;
                     }
@@ -251,12 +335,12 @@ $().ready(function () {
         console.log(resultObj);
         let svt = 0;
         let skill = 0;
-        let temp = `<tr><th style="width: 40px">No.</th><th style="width: 100px;">头像</th><th style="width: 230px">姓名</th><th style="width: 100px">技能图标</th><th style="width: 230px">技能名称</th></tr>`;
+        let temp = `<tr><th style="width:40px">No.</th><th style="width:100px;">头像</th><th style="width:230px">名称</th><th style="width:100px">技能图标</th><th style="width:230px">技能名称</th></tr>`;
         for (let i in resultObj) {
             ++svt;
             for (let j of resultObj[parseInt(i)]) {
                 ++skill;
-                temp += `<tr><td>${i}</td><td><a href="/w/${servant[i]['name']}"><img class="svt-icon" alt="${servant[i]['name']}" src="${servant[i]['path']}"></a></td><td><a href="/w/${servant[i]['name']}">${servant[i].name}</a></td><td><img class="skillIcon" alt="${servant[i].skills[j]['data'][2]}" data-id="${i},${j}" src="${icon[servant[i].skills[j]['data'][2]]}"></td><td><span>${servant[i].skills[j]['data'][3]}</span></td>`
+                temp += `<tr><td>${i}</td><td><a href="/w/${servant[i]['name']}"><img class="svt-icon" alt="${servant[i]['name']}" src="${servant[i]['path']}"></a></td><td><a href="/w/${servant[i]['name']}">${servant[i].name}</a></td><td><img class="skillIcon" alt="${servant[i].skills[j]['data'][1]}" data-id="${i},${j}" src="${icon[servant[i].skills[j]['data'][1]]}"></td><td><span>${servant[i].skills[j]['data'][2]}</span></td>`
             }
         }
         count.html(`共${svt}个从者,${skill}个技能`);
@@ -266,11 +350,12 @@ $().ready(function () {
     function buildSkill(arr) {
         function build(arr) {
             let temp = [];
-            let i = 6;
+            let i = 5;
             while (i < arr.length) {
                 arr[i] = arr[i].replace(/'"`UNIQ--ref-.*?-QINU`"'/, '');
-                if ((i - 6) % 11 === 0) {
-                    temp.push(`<tr><th colspan="10">${arr[i].replace(/<span class="tl-splink">(.*?)<\/span>/g, '$1').replace(/\[\[(.*?)\|(〔.*?〕)]]\[\[分类:对〔.*?〕具有特殊效果]]/g, `<span class="tl-splink"><a href="/w/$1" title="$1">$2</a></span>`)}</th></tr><tr>`);
+                if ((i - 5) % 11 === 0) {
+                    temp.push(`<tr><th colspan="10">${arr[i].replace(/<span class="tl-splink">(.*?)<\/span>/g, '$1')
+                        .replace(/\[\[(.*?)\|(.*?)]]\[\[分类:对〔.*?〕具有特殊效果]]/g, `<span class="tl-splink"><a href="/w/$1" title="$1">$2</a></span>`)}</th></tr><tr>`);
                     ++i;
                 } else {
                     let tempArr = arr.slice(i, i + 10);
@@ -289,7 +374,7 @@ $().ready(function () {
             return temp.join('');
         }
 
-        return `<table class="wikitable logo" style="text-align:center;width:750px;margin: 0"><tbody><tr><th rowspan="2" style="width:75px"><a href="/w/文件:${arr[2]}.png" class="image"><img alt="${arr[2]}" width="60" height="60" src="${icon[arr[2]]}"></a></th><th colspan="6" style="width:450px">${arr[3]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[5]}→<span style="color:red;">${parseInt(arr[5]) - 1}</span>→<span style="color:red;">${parseInt(arr[5]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[4]}</td></tr>${build(arr)}</tbody></table>`;
+        return `<table class="wikitable logo" style="text-align:center;width:750px;margin:0"><tbody><tr><th rowspan="2" style="width:75px"><a href="/w/文件:${arr[1]}.png" class="image"><img alt="${arr[1]}" width="60" height="60" src="${icon[arr[1]]}"></a></th><th colspan="6" style="width:450px">${arr[2]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[4]}→<span style="color:red;">${parseInt(arr[4]) - 1}</span>→<span style="color:red;">${parseInt(arr[4]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[3]}</td></tr>${build(arr)}</tbody></table>`;
     }
 
     function F2U(str) {

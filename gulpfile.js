@@ -89,6 +89,7 @@ function devHtml() {
     let skillIcon = fs.readFileSync('./src/skillIcon.txt', 'utf-8');
     let servantData = fs.readFileSync('./src/servantData.txt', 'utf-8');
     let data = fs.readFileSync('./src/data.txt', 'utf-8');
+    let rule = fs.readFileSync('./src/rule.json', 'utf-8');
     return gulp.src('./src/index.html')
         .pipe(through2.obj(function (file, _, cb) {
             if (file.isBuffer()) {
@@ -99,6 +100,7 @@ function devHtml() {
                     .replace('<!--{$skillIcon}-->', skillIcon)
                     .replace('<!--{$servantData|regex_replace:"/\\[\\[SMW::[a-z]+\\]\\]/":""}-->', servantData)
                     .replace('[<!--{$data}-->]', data)
+                    .replace('<!--{$rule}-->', rule)
                 );
             }
             cb(null, file);
