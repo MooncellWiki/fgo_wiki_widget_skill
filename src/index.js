@@ -30,7 +30,8 @@ $().ready(function () {
     let skill_popper;
     let url = $('#skillUrl');
     let count = $('#count');
-    let isMobile = !!mw.config.get('wgMFMode');
+    //let isMobile = !!mw.config.get('wgMFMode');
+    let isMobile =false;
     if (isMobile) {
         $('.target,.effect').attr('readonly', '');
     }
@@ -335,12 +336,12 @@ $().ready(function () {
         console.log(resultObj);
         let svt = 0;
         let skill = 0;
-        let temp = `<tr><th style="width:40px">No.</th><th style="width:100px;">头像</th><th style="width:230px">名称</th><th style="width:100px">技能图标</th><th style="width:230px">技能名称</th></tr>`;
+        let temp = `<tr><th style="width:20px">No.</th><th style="width:70px;">头像</th><th style="width:210px">名称</th><th style="width:750px">技能</th></tr>`;
         for (let i in resultObj) {
             ++svt;
             for (let j of resultObj[parseInt(i)]) {
                 ++skill;
-                temp += `<tr><td>${i}</td><td><a href="/w/${servant[i]['name']}"><img class="svt-icon" alt="${servant[i]['name']}" src="${servant[i]['path']}"></a></td><td><a href="/w/${servant[i]['name']}">${servant[i].name}</a></td><td><img class="skillIcon" alt="${servant[i].skills[j]['data'][1]}" data-id="${i},${j}" src="${icon[servant[i].skills[j]['data'][1]]}"></td><td><span>${servant[i].skills[j]['data'][2]}</span></td>`
+                temp += `<tr><td>${i}</td><td><a href="/w/${servant[i]['name']}"><img class="svt-icon" alt="${servant[i]['name']}" src="${servant[i]['path']}"></a></td><td><a href="/w/${servant[i]['name']}">${servant[i].name}</a><br/><br/><span>${servant[i].skills[j].data[2]}</span></td><td>${buildSkill(servant[i].skills[j].data)}</td>`
             }
         }
         count.html(`共${svt}个从者,${skill}个技能`);

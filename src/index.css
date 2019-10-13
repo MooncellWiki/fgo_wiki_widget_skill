@@ -101,7 +101,11 @@ button.add, #skillCopyUrl {
 }
 
 .svt-icon {
-    width: 81px;
+    width: 65px;
+}
+
+a {
+    font-size: 16px;
 }
 
 #result-tbody > tr > td {
