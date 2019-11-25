@@ -30,8 +30,8 @@ $().ready(function () {
     let skill_popper;
     let url = $('#skillUrl');
     let count = $('#count');
-    //let isMobile = !!mw.config.get('wgMFMode');
-    let isMobile =false;
+    let isMobile = !!mw.config.get('wgMFMode');
+    //let isMobile = false;
     if (isMobile) {
         $('.target,.effect').attr('readonly', '');
     }
@@ -165,8 +165,8 @@ $().ready(function () {
         return temp.join('');
     }
 
-    function buildTargetDropDown(str, effect) {
-        let t = effect ? effects2targets[effect] : targets;
+    function buildTargetDropDown(str) {
+        let t = targets;
         let temp = [];
         for (let v of t) {
             if (v.indexOf(str) !== -1) {
@@ -206,14 +206,14 @@ $().ready(function () {
         tbody.append(`<tr class="filter-row" id="last-filter-row"><td><span class="label">作用对象</span><input type="text" class="target" ${(isMobile ? 'readonly' : '')}></td><td><span class="label">作用效果</span><input type="text" class="effect" ${(isMobile ? 'readonly' : '')}></td><td><button class="remove">删除</button></td><td><button class="add">新增</button></td></tr>`);
     }).on('focus', '.target', function (event) {
         current_dropdown_target = $(event.currentTarget);
-        target_dropdown.html(buildTargetDropDown('', current_dropdown_target.parent().next().find('.effect').val())).show('fast');
+        target_dropdown.html(buildTargetDropDown('')).show('fast');
         target_popper = new Popper(event.currentTarget, target_dropdown, {
             placement: 'bottom-start'
         });
     }).on('input', '.target', function (event) {
         let t = $(event.currentTarget);
         let str = t.val();
-        target_dropdown.html(buildTargetDropDown(str, t.parent().next().find('.effect').val()));
+        target_dropdown.html(buildTargetDropDown(str));
         filter();
     }).on('blur', '.target', function () {
         target_dropdown.hide('fast', function () {
@@ -336,7 +336,7 @@ $().ready(function () {
         console.log(resultObj);
         let svt = 0;
         let skill = 0;
-        let temp = `<tr><th style="width:20px">No.</th><th style="width:70px;">头像</th><th style="width:210px">名称</th><th style="width:750px">技能</th></tr>`;
+        let temp = `<tr><th style="width:20px">No.</th><th style="width:70px;">头像</th><th style="width:210px">名称</th><th>技能</th></tr>`;
         for (let i in resultObj) {
             ++svt;
             for (let j of resultObj[parseInt(i)]) {
@@ -365,7 +365,7 @@ $().ready(function () {
                         temp.push(`<td colspan="10">${tempArr[0]}</td>`);
                     } else {
                         tempArr.forEach(function (val) {
-                            temp.push(`<td style="width:75px">${val}</td>`);
+                            temp.push(`<td style="width:${isMobile?'38px':'75px'}">${val}</td>`);
                         });
                     }
                     temp.push('</tr>');
@@ -375,7 +375,7 @@ $().ready(function () {
             return temp.join('');
         }
 
-        return `<table class="wikitable logo" style="text-align:center;width:750px;margin:0"><tbody><tr><th rowspan="2" style="width:75px"><a href="/w/文件:${arr[1]}.png" class="image"><img alt="${arr[1]}" width="60" height="60" src="${icon[arr[1]]}"></a></th><th colspan="6" style="width:450px">${arr[2]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[4]}→<span style="color:red;">${parseInt(arr[4]) - 1}</span>→<span style="color:red;">${parseInt(arr[4]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[3]}</td></tr>${build(arr)}</tbody></table>`;
+        return `<table class="wikitable logo" style="text-align:center;width:${isMobile?'370':'750'}px;margin:0"><tbody><tr><th rowspan="2" style="width:75px"><a href="/w/文件:${arr[1]}.png" class="image"><img alt="${arr[1]}" width="60" height="60" src="${icon[arr[1]]}"></a></th><th colspan="6" style="width:450px">${arr[2]}</th><th rowspan="2" colspan="3" style="width:225px">充能时间：${arr[4]}→<span style="color:red;">${parseInt(arr[4]) - 1}</span>→<span style="color:red;">${parseInt(arr[4]) - 2}</span></th></tr><tr><td colspan="6" lang="ja">${arr[3]}</td></tr>${build(arr)}</tbody></table>`;
     }
 
     function F2U(str) {

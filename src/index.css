@@ -7,6 +7,7 @@
     width: 200px;
     box-sizing: border-box;
     overflow-y: auto;
+    z-index: 10;
 }
 
 #effect-dropdown {
@@ -126,8 +127,16 @@ a {
     text-align: center;
 }
 
+.skin-vector {
+    width: 1100px;
+}
+
+.skin-minerva {
+    width: 700px;
+}
+
 body.skin-minerva {
-    min-width: 780px;
+    min-width: 700px;
 }
 
 .skin-minerva .sw td {

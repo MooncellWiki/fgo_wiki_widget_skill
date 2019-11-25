@@ -5,6 +5,8 @@ const through2 = require('through2');
 const htmlmin = require('gulp-htmlmin');
 const fs = require('fs');
 const connect = require('gulp-connect');
+const ml = '.skin-minerva'.length;
+const vl = '.skin-vector'.length;
 
 function buildJavaScript() {
     return gulp.src('./src/index.js')
@@ -27,10 +29,22 @@ function buildCss() {
                 let lines = file.contents.toString().split('\n');
                 let temp = '';
                 for (let i = 0; i < lines.length; i++) {
-                    if (!lines[i].startsWith(' ') && !lines[i].startsWith('}') && lines[i].indexOf('{') !== -1 && lines[i].indexOf('.skin-minerva') === -1) {
-                        temp += '.widget ';
+                    if (!lines[i].startsWith(' ') &&
+                        !lines[i].startsWith('}') &&
+                        lines[i].indexOf('{') !== -1 &&
+                        lines[i].indexOf('body') === -1) {
+                        let m = lines[i].indexOf('.skin-minerva');
+                        let v = lines[i].indexOf('.skin-vector');
+                        if (m !== -1) {
+                            temp += (lines[i].slice(0, m + ml) + ' .widget ' + lines[i].slice(m + ml));
+                        } else if (v !== -1) {
+                            temp += (lines[i].slice(0, v + vl) + ' .widget ' + lines[i].slice(v + vl));
+                        } else {
+                            temp += '.widget ' + lines[i] + '\n';
+                        }
+                    } else {
+                        temp += lines[i] + '\n';
                     }
-                    temp += lines[i] + '\n';
                 }
                 file.contents = Buffer.from(temp);
             }
@@ -72,10 +86,22 @@ function devCss() {
                 let lines = file.contents.toString().split('\n');
                 let temp = '';
                 for (let i = 0; i < lines.length; i++) {
-                    if (!lines[i].startsWith(' ') && !lines[i].startsWith('}') && lines[i].indexOf('{') !== -1 && lines[i].indexOf('.skin-minerva') === -1) {
-                        temp += '.widget ';
+                    if (!lines[i].startsWith(' ') &&
+                        !lines[i].startsWith('}') &&
+                        lines[i].indexOf('{') !== -1 &&
+                        lines[i].indexOf('body') === -1) {
+                        let m = lines[i].indexOf('.skin-minerva');
+                        let v = lines[i].indexOf('.skin-vector');
+                        if (m !== -1) {
+                            temp += (lines[i].slice(0, m + ml) + ' .widget ' + lines[i].slice(m + ml));
+                        } else if (v !== -1) {
+                            temp += (lines[i].slice(0, v + vl) + ' .widget ' + lines[i].slice(v + vl));
+                        } else {
+                            temp += '.widget ' + lines[i] + '\n';
+                        }
+                    } else {
+                        temp += lines[i] + '\n';
                     }
-                    temp += lines[i] + '\n';
                 }
                 file.contents = Buffer.from(temp);
             }
